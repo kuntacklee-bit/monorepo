@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>App B – 인사 앱</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0f1e;
+      --surface: #111827;
+      --border: #1e2d45;
+      --accent: #60c8f0;
+      --text: #e8e8e8;
+      --muted: #455;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .card {
+      position: relative;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 52px 48px;
+      width: 460px;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .card::before, .card::after {
+      content: '';
+      position: absolute;
+      width: 16px; height: 16px;
+      border-color: var(--accent);
+      border-style: solid;
+    }
+    .card::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+    .card::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+    .label-tag {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      font-family: 'Nanum Myeongjo', serif;
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.3;
+      margin-bottom: 40px;
+      color: #fff;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 0;
+      margin-bottom: 40px;
+      border: 1px solid var(--border);
+      transition: border-color 0.2s;
+    }
+    .input-group:focus-within {
+      border-color: var(--accent);
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 14px 18px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 15px;
+      color: var(--text);
+      caret-color: var(--accent);
+    }
+    input::placeholder { color: var(--muted); }
+
+    button {
+      background: var(--accent);
+      color: #0a0f1e;
+      border: none;
+      padding: 14px 22px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    button:hover { background: #80d8ff; }
+    button:active { transform: scale(0.97); }
+
+    .result {
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+    }
+
+    .greeting {
+      font-family: 'Nanum Myeongjo', serif;
+      font-size: 22px;
+      color: var(--accent);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .greeting.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .footer-line {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.15em;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="label-tag">▸ APP-B · MONOREPO TEST</div>
+    <h1>이름을 입력하면<br>인사를 드립니다</h1>
+
+    <div class="input-group">
+      <input type="text" id="nameInput" placeholder="이름을 입력하세요" maxlength="20" />
+      <button onclick="greet()">인사하기</button>
+    </div>
+
+    <div class="result">
+      <div class="greeting" id="greeting"></div>
+    </div>
+
+    <div class="footer-line">VERCEL PROJECT B · FIREBASE PROJECT B</div>
+  </div>
+
+  <script>
+    const input = document.getElementById('nameInput');
+    const greetingEl = document.getElementById('greeting');
+
+    function greet() {
+      const name = input.value.trim();
+      if (!name) {
+        greetingEl.classList.remove('show');
+        greetingEl.textContent = '';
+        return;
+      }
+      greetingEl.classList.remove('show');
+      setTimeout(() => {
+        greetingEl.textContent = `안녕하세요, ${name}님!`;
+        greetingEl.classList.add('show');
+      }, 80);
+    }
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') greet();
+    });
+  </script>
+</body>
+</html>
