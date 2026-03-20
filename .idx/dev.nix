@@ -26,7 +26,7 @@
         web = {
           # Example: run "npm run dev" with PORT set to IDX's defined port for previews,
           # and show it in IDX's web preview panel
-          command = ["python3" "-m" "http.server" "-d" ".idx/app-a" "$PORT"];
+          command = ["python3" "-m" "http.server" "-d" "app-a" "$PORT"];
           manager = "web";
         };
       };
