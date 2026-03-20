@@ -16,10 +16,10 @@
     <div class="input-group">
       <input type="text" id="nameInput" placeholder="이름을 입력하세요" maxlength="20" />
     </div>
-    <button onclick="addEntry()">기록하기</button>
-    <button onclick="toggleList()" id="toggleButton" class="button-secondary">목록 보기</button>
+    <button id="addButton">기록하기</button>
+    <button id="toggleButton" class="button-secondary">목록 보기</button>
 
-    <div class="result-list" id="resultList">
+    <div class="result-list" id="resultList" style="display: none;">
       <ul id="entryList"></ul>
     </div>
 
@@ -28,69 +28,105 @@
 
   <script type="module">
     import { db } from './src/firebaseA.js';
-    import { collection, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    import { collection, addDoc, getDocs, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
-    const input = document.getElementById('nameInput');
+    // DOM Elements
+    const nameInput = document.getElementById('nameInput');
     const entryList = document.getElementById('entryList');
     const resultList = document.getElementById('resultList');
     const toggleButton = document.getElementById('toggleButton');
+    const addButton = document.getElementById('addButton');
 
-    // Firestore collection reference
+    // Firestore Collection
     const entriesCol = collection(db, 'entries_app_a');
 
+    // --- Utility Functions ---
+    function setLoading(isLoading) {
+        addButton.disabled = isLoading;
+        toggleButton.disabled = isLoading;
+        if (isLoading) {
+            entryList.innerHTML = '<li>목록을 불러오는 중입니다...</li>';
+        }
+    }
+
+    function showError(error) {
+        console.error("Firebase Error: ", error);
+        entryList.innerHTML = `<li>오류가 발생했습니다: ${error.message}. <br>콘솔(F12)을 확인해주세요.</li>`;
+        alert(`오류가 발생했습니다. Firebase 보안 규칙을 확인해보세요.`);
+    }
+
+    // --- Core Functions ---
     async function loadEntries() {
-        entryList.innerHTML = ''; // Clear the list first
-        const querySnapshot = await getDocs(entriesCol);
-        querySnapshot.forEach((doc) => {
-            const entry = doc.data();
-            const date = entry.timestamp.toDate().toLocaleString('ko-KR');
-            addEntryToList(entry.name, date);
-        });
+        setLoading(true);
+        entryList.innerHTML = ''; // Clear previous content
+        try {
+            const q = query(entriesCol, orderBy("timestamp", "desc"));
+            const querySnapshot = await getDocs(q);
+            if (querySnapshot.empty) {
+                entryList.innerHTML = '<li>기록된 내용이 없습니다.</li>';
+            } else {
+                querySnapshot.forEach((doc) => {
+                    const entry = doc.data();
+                    const date = entry.timestamp ? entry.timestamp.toDate().toLocaleString('ko-KR') : '날짜 없음';
+                    addEntryToListDOM(entry.name, date);
+                });
+            }
+        } catch (e) {
+            showError(e);
+        } finally {
+            setLoading(false);
+        }
     }
 
     async function addEntry() {
-      const name = input.value.trim();
+      const name = nameInput.value.trim();
       if (!name) return;
+
+      addButton.disabled = true;
+      addButton.textContent = '저장 중...';
 
       try {
         await addDoc(entriesCol, {
             name: name,
             timestamp: serverTimestamp()
         });
-        // Refresh the list to show the new entry
-        loadEntries();
+        nameInput.value = '';
+        if (resultList.style.display === 'block') {
+            await loadEntries(); // Refresh the list
+        }
       } catch (e) {
         console.error("Error adding document: ", e);
+        alert(`저장에 실패했습니다: ${e.message}`);
+      } finally {
+        addButton.disabled = false;
+        addButton.textContent = '기록하기';
       }
-
-      input.value = '';
     }
 
-    function addEntryToList(name, date) {
+    function addEntryToListDOM(name, date) {
         const li = document.createElement('li');
         li.textContent = `${name} - ${date}`;
-        // Prepend to show the newest first
-        entryList.prepend(li);
+        entryList.prepend(li); // Prepend to show newest first
     }
 
     function toggleList() {
-        if (resultList.style.display === 'none' || resultList.style.display === '') {
-            resultList.style.display = 'block';
-            toggleButton.textContent = '목록 닫기';
-            loadEntries(); // Load entries when the list is shown
-        } else {
-            resultList.style.display = 'none';
-            toggleButton.textContent = '목록 보기';
+        const isHidden = resultList.style.display === 'none';
+        resultList.style.display = isHidden ? 'block' : 'none';
+        toggleButton.textContent = isHidden ? '목록 닫기' : '목록 보기';
+        if (isHidden) {
+            loadEntries();
         }
     }
 
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') addEntry();
+    // --- Event Listeners ---
+    addButton.addEventListener('click', addEntry);
+    toggleButton.addEventListener('click', toggleList);
+    nameInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault(); // Prevent form submission if it's in a form
+        addEntry();
+      }
     });
-
-    // Make functions globally available
-    window.addEntry = addEntry;
-    window.toggleList = toggleList;
   </script>
 </body>
 </html>
