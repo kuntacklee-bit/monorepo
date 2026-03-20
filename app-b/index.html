@@ -16,10 +16,10 @@
     <div class="input-group">
       <input type="text" id="nameInput" placeholder="이름을 입력하세요" maxlength="20" />
     </div>
-    <button onclick="addEntry()">기록하기</button>
-    <button onclick="toggleList()" id="toggleButton" class="button-secondary">목록 보기</button>
+    <button id="addButton">기록하기</button>
+    <button id="toggleButton" class="button-secondary">목록 보기</button>
 
-    <div class="result-list" id="resultList">
+    <div class="result-list" id="resultList" style="display: none;">
       <ul id="entryList"></ul>
     </div>
 
@@ -27,29 +27,30 @@
   </div>
 
   <script type="module">
-    import { db } from './src/firebaseB.js';
-    import { collection, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    import { db } from './src/firebase.js'; // 'firebaseB.js' 에서 'firebase.js'로 수정
+    import { collection, addDoc, getDocs, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
-    const input = document.getElementById('nameInput');
+    const nameInput = document.getElementById('nameInput');
     const entryList = document.getElementById('entryList');
     const resultList = document.getElementById('resultList');
     const toggleButton = document.getElementById('toggleButton');
+    const addButton = document.getElementById('addButton');
 
-    // Firestore collection reference for App B
     const entriesCol = collection(db, 'entries_app_b');
 
     async function loadEntries() {
-        entryList.innerHTML = ''; // Clear the list first
-        const querySnapshot = await getDocs(entriesCol);
+        entryList.innerHTML = '';
+        const q = query(entriesCol, orderBy("timestamp", "desc"));
+        const querySnapshot = await getDocs(q);
         querySnapshot.forEach((doc) => {
             const entry = doc.data();
-            const date = entry.timestamp.toDate().toLocaleString('ko-KR');
-            addEntryToList(entry.name, date);
+            const date = entry.timestamp ? entry.timestamp.toDate().toLocaleString('ko-KR') : '날짜 없음';
+            addEntryToListDOM(entry.name, date);
         });
     }
 
     async function addEntry() {
-      const name = input.value.trim();
+      const name = nameInput.value.trim();
       if (!name) return;
 
       try {
@@ -57,39 +58,37 @@
             name: name,
             timestamp: serverTimestamp()
         });
-        // Refresh the list to show the new entry
-        loadEntries();
+        if (resultList.style.display === 'block') {
+            loadEntries();
+        }
       } catch (e) {
         console.error("Error adding document: ", e);
       }
-
-      input.value = '';
+      nameInput.value = '';
     }
 
-    function addEntryToList(name, date) {
+    function addEntryToListDOM(name, date) {
         const li = document.createElement('li');
         li.textContent = `${name} - ${date}`;
-        entryList.prepend(li); // Prepend to show the newest first
+        entryList.appendChild(li);
     }
 
     function toggleList() {
-        if (resultList.style.display === 'none' || resultList.style.display === '') {
+        if (resultList.style.display === 'none') {
             resultList.style.display = 'block';
             toggleButton.textContent = '목록 닫기';
-            loadEntries(); // Load entries when the list is shown
+            loadEntries();
         } else {
             resultList.style.display = 'none';
             toggleButton.textContent = '목록 보기';
         }
     }
 
-    input.addEventListener('keydown', e => {
+    addButton.addEventListener('click', addEntry);
+    toggleButton.addEventListener('click', toggleList);
+    nameInput.addEventListener('keydown', e => {
       if (e.key === 'Enter') addEntry();
     });
-
-    // Make functions globally available
-    window.addEntry = addEntry;
-    window.toggleList = toggleList;
   </script>
 </body>
 </html>
